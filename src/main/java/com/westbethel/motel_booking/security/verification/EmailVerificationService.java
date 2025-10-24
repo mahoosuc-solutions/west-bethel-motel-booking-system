@@ -1,5 +1,6 @@
 package com.westbethel.motel_booking.security.verification;
 
+import com.westbethel.motel_booking.common.audit.AuditEntry;
 import com.westbethel.motel_booking.common.service.AuditService;
 import com.westbethel.motel_booking.security.domain.User;
 import com.westbethel.motel_booking.security.repository.UserRepository;
@@ -52,12 +53,15 @@ public class EmailVerificationService {
         // Check rate limit
         if (isRateLimited(user.getId())) {
             log.warn("Email verification rate limit exceeded for user: {}", user.getUsername());
-            auditService.logSecurityEvent(
-                    "EMAIL_VERIFICATION_RATE_LIMIT_EXCEEDED",
-                    user.getUsername(),
-                    "Rate limit exceeded for email verification",
-                    null
-            );
+            auditService.record(AuditEntry.builder()
+                    .id(UUID.randomUUID())
+                    .entityType("SECURITY_EVENT")
+                    .entityId(user.getUsername())
+                    .action("EMAIL_VERIFICATION_RATE_LIMIT_EXCEEDED")
+                    .performedBy(user.getUsername())
+                    .details("Rate limit exceeded for email verification")
+                    .occurredAt(OffsetDateTime.now())
+                    .build());
             throw new IllegalStateException("Too many verification email requests. Please try again later.");
         }
 
@@ -78,12 +82,15 @@ public class EmailVerificationService {
         incrementRateLimit(user.getId());
 
         // Audit log
-        auditService.logSecurityEvent(
-                "EMAIL_VERIFICATION_SENT",
-                user.getUsername(),
-                "Email verification token sent",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(user.getUsername())
+                .action("EMAIL_VERIFICATION_SENT")
+                .performedBy(user.getUsername())
+                .details("Email verification token sent")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("Email verification token generated for user: {}", user.getUsername());
 
@@ -125,12 +132,15 @@ public class EmailVerificationService {
         verificationRepository.save(verificationToken);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "EMAIL_VERIFIED",
-                user.getUsername(),
-                "Email successfully verified",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(user.getUsername())
+                .action("EMAIL_VERIFIED")
+                .performedBy(user.getUsername())
+                .details("Email successfully verified")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("Email verified for user: {}", user.getUsername());
     }

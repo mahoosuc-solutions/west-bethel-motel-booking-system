@@ -1,5 +1,6 @@
 package com.westbethel.motel_booking.security.session;
 
+import com.westbethel.motel_booking.common.audit.AuditEntry;
 import com.westbethel.motel_booking.common.service.AuditService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,12 +56,15 @@ public class SessionManagementService {
         sessionRepository.save(session);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "SESSION_CREATED",
-                username,
-                String.format("Session created from IP: %s", ipAddress),
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("SESSION_CREATED")
+                .performedBy(username)
+                .details(String.format("Session created from IP: %s", ipAddress))
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.debug("Session created with ID: {}", sessionId);
         return session;
@@ -125,12 +129,15 @@ public class SessionManagementService {
         sessionRepository.save(session);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "SESSION_INVALIDATED",
-                username,
-                String.format("Session %s invalidated", sessionId),
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("SESSION_INVALIDATED")
+                .performedBy(username)
+                .details(String.format("Session %s invalidated", sessionId))
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("Session invalidated: {}", sessionId);
     }
@@ -152,12 +159,15 @@ public class SessionManagementService {
         }
 
         // Audit log
-        auditService.logSecurityEvent(
-                "ALL_SESSIONS_INVALIDATED",
-                username,
-                String.format("All sessions invalidated (%d sessions)", sessions.size()),
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("ALL_SESSIONS_INVALIDATED")
+                .performedBy(username)
+                .details(String.format("All sessions invalidated (%d sessions)", sessions.size()))
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("Invalidated {} sessions for user: {}", sessions.size(), username);
     }
@@ -184,13 +194,16 @@ public class SessionManagementService {
                 log.warn("Suspicious activity detected for user {}: IP change from {} to {}",
                         username, session.getIpAddress(), ipAddress);
 
-                auditService.logSecurityEvent(
-                        "SUSPICIOUS_ACTIVITY_DETECTED",
-                        username,
-                        String.format("IP address change detected: %s -> %s",
-                                session.getIpAddress(), ipAddress),
-                        null
-                );
+                auditService.record(AuditEntry.builder()
+                        .id(UUID.randomUUID())
+                        .entityType("SECURITY_EVENT")
+                        .entityId(username)
+                        .action("SUSPICIOUS_ACTIVITY_DETECTED")
+                        .performedBy(username)
+                        .details(String.format("IP address change detected: %s -> %s",
+                                session.getIpAddress(), ipAddress))
+                        .occurredAt(OffsetDateTime.now())
+                        .build());
 
                 return true;
             }

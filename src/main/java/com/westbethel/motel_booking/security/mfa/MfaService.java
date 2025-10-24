@@ -1,5 +1,6 @@
 package com.westbethel.motel_booking.security.mfa;
 
+import com.westbethel.motel_booking.common.audit.AuditEntry;
 import com.westbethel.motel_booking.common.service.AuditService;
 import com.westbethel.motel_booking.security.domain.User;
 import com.westbethel.motel_booking.security.mfa.dto.MfaSetupResponse;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -68,12 +70,15 @@ public class MfaService {
         userRepository.save(user);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "MFA_SETUP_INITIATED",
-                username,
-                "MFA setup process initiated",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("MFA_SETUP_INITIATED")
+                .performedBy(username)
+                .details("MFA setup process initiated")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("MFA setup completed for user: {}", username);
 
@@ -126,12 +131,15 @@ public class MfaService {
         storeBackupCodes(user, backupCodes);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "MFA_ENABLED",
-                username,
-                "MFA successfully enabled",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("MFA_ENABLED")
+                .performedBy(username)
+                .details("MFA successfully enabled")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("MFA enabled for user: {}", username);
     }
@@ -157,33 +165,42 @@ public class MfaService {
 
         // Try TOTP code first
         if (totpService.verifyCode(user.getMfaSecret(), code)) {
-            auditService.logSecurityEvent(
-                    "MFA_VERIFICATION_SUCCESS",
-                    username,
-                    "MFA verification successful (TOTP)",
-                    null
-            );
+            auditService.record(AuditEntry.builder()
+                    .id(UUID.randomUUID())
+                    .entityType("SECURITY_EVENT")
+                    .entityId(username)
+                    .action("MFA_VERIFICATION_SUCCESS")
+                    .performedBy(username)
+                    .details("MFA verification successful (TOTP)")
+                    .occurredAt(OffsetDateTime.now())
+                    .build());
             return true;
         }
 
         // Try backup code
         if (verifyAndUseBackupCode(user, code)) {
-            auditService.logSecurityEvent(
-                    "MFA_VERIFICATION_SUCCESS",
-                    username,
-                    "MFA verification successful (Backup Code)",
-                    null
-            );
+            auditService.record(AuditEntry.builder()
+                    .id(UUID.randomUUID())
+                    .entityType("SECURITY_EVENT")
+                    .entityId(username)
+                    .action("MFA_VERIFICATION_SUCCESS")
+                    .performedBy(username)
+                    .details("MFA verification successful (Backup Code)")
+                    .occurredAt(OffsetDateTime.now())
+                    .build());
             return true;
         }
 
         // Verification failed
-        auditService.logSecurityEvent(
-                "MFA_VERIFICATION_FAILED",
-                username,
-                "MFA verification failed",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("MFA_VERIFICATION_FAILED")
+                .performedBy(username)
+                .details("MFA verification failed")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.warn("MFA verification failed for user: {}", username);
         return false;
@@ -220,12 +237,15 @@ public class MfaService {
         deleteExistingBackupCodes(user);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "MFA_DISABLED",
-                username,
-                "MFA disabled",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("MFA_DISABLED")
+                .performedBy(username)
+                .details("MFA disabled")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("MFA disabled for user: {}", username);
     }
@@ -257,12 +277,15 @@ public class MfaService {
         storeBackupCodes(user, backupCodes);
 
         // Audit log
-        auditService.logSecurityEvent(
-                "MFA_BACKUP_CODES_REGENERATED",
-                username,
-                "MFA backup codes regenerated",
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("MFA_BACKUP_CODES_REGENERATED")
+                .performedBy(username)
+                .details("MFA backup codes regenerated")
+                .occurredAt(OffsetDateTime.now())
+                .build());
 
         log.info("Backup codes regenerated for user: {}", username);
 

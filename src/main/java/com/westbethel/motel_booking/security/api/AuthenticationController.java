@@ -4,6 +4,7 @@ import com.westbethel.motel_booking.security.domain.Role;
 import com.westbethel.motel_booking.security.domain.User;
 import com.westbethel.motel_booking.security.dto.*;
 import com.westbethel.motel_booking.security.service.AuthenticationService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -107,12 +108,23 @@ public class AuthenticationController {
      * @return success response
      */
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout() {
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null && authentication.isAuthenticated()) {
             String username = authentication.getName();
-            authenticationService.logout(username);
+
+            // Extract token from Authorization header
+            String token = null;
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7);
+            }
+
+            // Extract IP address from request
+            String ipAddress = request.getRemoteAddr();
+
+            authenticationService.logout(username, token, ipAddress);
             log.info("User logged out: {}", username);
         }
 

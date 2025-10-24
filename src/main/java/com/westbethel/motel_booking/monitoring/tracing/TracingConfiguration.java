@@ -57,7 +57,6 @@ public class TracingConfiguration {
     @Bean
     public brave.handler.SpanHandler spanHandler() {
         return new brave.handler.SpanHandler() {
-            @Override
             public boolean end(brave.handler.MutableSpan span, brave.Span.Kind kind, long timestamp) {
                 // Add custom tags to all spans
                 span.tag("service", applicationName);

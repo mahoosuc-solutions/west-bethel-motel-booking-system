@@ -1,5 +1,6 @@
 package com.westbethel.motel_booking.security.blacklist;
 
+import com.westbethel.motel_booking.common.audit.AuditEntry;
 import com.westbethel.motel_booking.common.service.AuditService;
 import com.westbethel.motel_booking.security.service.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for managing JWT token blacklist in Redis.
@@ -56,12 +58,15 @@ public class TokenBlacklistService {
                 blacklistRepository.save(blacklistedToken);
 
                 // Audit log
-                auditService.logSecurityEvent(
-                        "TOKEN_BLACKLISTED",
-                        username,
-                        "Token blacklisted: " + reason,
-                        null
-                );
+                auditService.record(AuditEntry.builder()
+                        .id(UUID.randomUUID())
+                        .entityType("SECURITY_EVENT")
+                        .entityId(username)
+                        .action("TOKEN_BLACKLISTED")
+                        .performedBy(username)
+                        .details("Token blacklisted: " + reason)
+                        .occurredAt(OffsetDateTime.now())
+                        .build());
 
                 log.info("Token blacklisted for user '{}' with reason: {}", username, reason);
             } else {
@@ -103,12 +108,15 @@ public class TokenBlacklistService {
         // For now, this method serves as a placeholder for future implementation
         // where we maintain a user -> tokens mapping in Redis
 
-        auditService.logSecurityEvent(
-                "ALL_TOKENS_BLACKLISTED",
-                username,
-                "All tokens blacklisted: " + reason,
-                null
-        );
+        auditService.record(AuditEntry.builder()
+                .id(UUID.randomUUID())
+                .entityType("SECURITY_EVENT")
+                .entityId(username)
+                .action("ALL_TOKENS_BLACKLISTED")
+                .performedBy(username)
+                .details("All tokens blacklisted: " + reason)
+                .occurredAt(OffsetDateTime.now())
+                .build());
     }
 
     /**

@@ -4,7 +4,7 @@ import com.westbethel.motel_booking.monitoring.metrics.BusinessMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthComponent;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -75,31 +75,44 @@ public class DashboardService {
     public SystemHealth getSystemHealth() {
         log.debug("Collecting system health information");
 
-        Health health = healthEndpoint.health();
-        String overallStatus = health.getStatus().getCode();
+        HealthComponent healthComponent = healthEndpoint.health();
+        String overallStatus = healthComponent.getStatus().getCode();
 
         return SystemHealth.builder()
             .overallStatus(overallStatus)
             .timestamp(LocalDateTime.now())
-            .database(extractComponentHealth(health, "db"))
-            .redis(extractComponentHealth(health, "redis"))
-            .emailService(extractComponentHealth(health, "mail"))
-            .memory(extractComponentHealth(health, "memory"))
-            .disk(extractComponentHealth(health, "diskSpace"))
-            .additionalDetails(extractAdditionalDetails(health))
+            .database(extractComponentHealth(healthComponent, "db"))
+            .redis(extractComponentHealth(healthComponent, "redis"))
+            .emailService(extractComponentHealth(healthComponent, "mail"))
+            .memory(extractComponentHealth(healthComponent, "memory"))
+            .disk(extractComponentHealth(healthComponent, "diskSpace"))
+            .additionalDetails(extractAdditionalDetails(healthComponent))
             .build();
     }
 
-    private SystemHealth.ComponentHealth extractComponentHealth(Health health, String component) {
+    private SystemHealth.ComponentHealth extractComponentHealth(HealthComponent healthComponent, String component) {
         try {
-            var components = health.getDetails();
-            if (components != null && components.containsKey(component)) {
-                var componentHealth = (Health) components.get(component);
-                return SystemHealth.ComponentHealth.builder()
-                    .status(componentHealth.getStatus().getCode())
-                    .message(componentHealth.getStatus().getDescription())
-                    .details(componentHealth.getDetails())
-                    .build();
+            if (healthComponent instanceof org.springframework.boot.actuate.health.CompositeHealth) {
+                org.springframework.boot.actuate.health.CompositeHealth compositeHealth =
+                    (org.springframework.boot.actuate.health.CompositeHealth) healthComponent;
+                Map<String, HealthComponent> components = compositeHealth.getComponents();
+
+                if (components != null && components.containsKey(component)) {
+                    HealthComponent compHealth = components.get(component);
+                    Map<String, Object> details = new HashMap<>();
+
+                    if (compHealth instanceof org.springframework.boot.actuate.health.Health) {
+                        org.springframework.boot.actuate.health.Health health =
+                            (org.springframework.boot.actuate.health.Health) compHealth;
+                        details = health.getDetails();
+                    }
+
+                    return SystemHealth.ComponentHealth.builder()
+                        .status(compHealth.getStatus().getCode())
+                        .message(compHealth.getStatus().getDescription())
+                        .details(details)
+                        .build();
+                }
             }
         } catch (Exception e) {
             log.warn("Failed to extract health for component: {}", component, e);
@@ -111,10 +124,22 @@ public class DashboardService {
             .build();
     }
 
-    private Map<String, Object> extractAdditionalDetails(Health health) {
+    private Map<String, Object> extractAdditionalDetails(HealthComponent healthComponent) {
         Map<String, Object> details = new HashMap<>();
-        if (health.getDetails() != null) {
-            details.putAll(health.getDetails());
+        try {
+            if (healthComponent instanceof org.springframework.boot.actuate.health.CompositeHealth) {
+                org.springframework.boot.actuate.health.CompositeHealth compositeHealth =
+                    (org.springframework.boot.actuate.health.CompositeHealth) healthComponent;
+                Map<String, HealthComponent> components = compositeHealth.getComponents();
+
+                if (components != null) {
+                    for (Map.Entry<String, HealthComponent> entry : components.entrySet()) {
+                        details.put(entry.getKey(), entry.getValue().getStatus().getCode());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract additional health details", e);
         }
         return details;
     }

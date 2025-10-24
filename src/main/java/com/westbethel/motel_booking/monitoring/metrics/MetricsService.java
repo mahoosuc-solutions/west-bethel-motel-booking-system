@@ -160,9 +160,12 @@ public class MetricsService {
      * Record JWT validation time
      */
     public <T> T recordJwtValidation(Supplier<T> operation) {
-        return Timer.Sample.builder()
-            .register(businessMetrics.getJwtValidationTimer().getRegistry())
-            .stop(businessMetrics.getJwtValidationTimer());
+        Timer.Sample sample = Timer.start();
+        try {
+            return operation.get();
+        } finally {
+            sample.stop(businessMetrics.getJwtValidationTimer());
+        }
     }
 
     /**

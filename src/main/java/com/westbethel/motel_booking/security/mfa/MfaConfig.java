@@ -27,7 +27,6 @@ public class MfaConfig {
                 .setTimeStepSizeInMillis(TimeUnit.SECONDS.toMillis(30))
                 .setWindowSize(3) // Allow 1.5 minutes window (3 * 30 seconds)
                 .setCodeDigits(6)
-                .setKeyRepresentation(GoogleAuthenticatorConfig.KeyRepresentation.BASE32)
                 .build();
 
         return new GoogleAuthenticator(config);
