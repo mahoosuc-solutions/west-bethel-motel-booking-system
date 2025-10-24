@@ -517,7 +517,7 @@ public class ApiContractTests extends E2ETestBase {
 
         // Webhook would be triggered asynchronously
         if (response.statusCode() == 201) {
-            org.assertj.core.api.Assertions.assertThat(response.path("id")).isNotNull();
+            assertThat((Object) response.path("id")).isNotNull();
         }
     }
 
