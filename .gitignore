@@ -1,0 +1,100 @@
+# Build outputs
+/target/
+*.class
+/out/
+/build/
+
+# IDE files
+/.idea/
+/.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# Maven
+/.mvn/
+mvnw
+mvnw.cmd
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/logs/
+*.log.*
+
+#==============================================================================
+# SECURITY: Environment Variables and Secrets
+#==============================================================================
+# NEVER commit these files - they contain sensitive credentials!
+
+# Environment files
+.env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.backup.*
+
+# Secret files
+*secret*
+*secrets*
+*password*
+*credentials*
+application-local.yml
+application-local.properties
+application-secrets.yml
+application-secrets.properties
+
+# Certificate files
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.jks
+*.keystore
+
+# Backup files with potential secrets
+*.backup
+*.bak
+*.old
+
+#==============================================================================
+# Application specific
+#==============================================================================
+
+# H2 Database files (if using H2 for local testing)
+*.db
+*.trace.db
+
+# Spring Boot
+spring-boot-devtools.properties
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Generated documentation
+/generated-docs/
+
+# Test coverage
+/coverage/
+*.coverage
+
+# Docker volumes (if generated locally)
+docker-volumes/
+
+# Local configuration overrides
+config/local/
+local-config/

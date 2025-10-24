@@ -1,0 +1,186 @@
+{
+  "test_scenarios": {
+    "e2e_tests": {
+      "booking_flow": {
+        "description": "Complete booking flow from search to confirmation",
+        "scenarios": [
+          "happy_path_booking",
+          "invalid_dates_rejection",
+          "unavailable_room_handling",
+          "concurrent_booking_race_condition",
+          "booking_modification",
+          "booking_cancellation"
+        ]
+      },
+      "user_journey": {
+        "description": "Complete user journeys through the system",
+        "scenarios": [
+          "registration_to_checkout",
+          "guest_browse_and_register",
+          "returning_user_login",
+          "modify_booking_before_stay",
+          "cancel_and_rebook",
+          "group_travel_multiple_bookings"
+        ]
+      },
+      "payment_flow": {
+        "description": "Payment processing workflows",
+        "scenarios": [
+          "complete_payment_flow",
+          "invalid_card_rejection",
+          "multiple_payment_methods",
+          "partial_payment",
+          "refund_processing"
+        ]
+      },
+      "admin_workflow": {
+        "description": "Administrative operations",
+        "scenarios": [
+          "property_management",
+          "room_inventory_management",
+          "view_all_bookings",
+          "cancel_user_booking",
+          "generate_reports"
+        ]
+      }
+    },
+    "load_tests": {
+      "normal_load": {
+        "description": "Normal operating conditions",
+        "concurrent_users": 50,
+        "duration_seconds": 300,
+        "scenarios": [
+          "user_registration",
+          "availability_search",
+          "booking_creation",
+          "room_listing"
+        ]
+      },
+      "stress_test": {
+        "description": "Beyond normal capacity",
+        "concurrent_users": 200,
+        "duration_seconds": 600,
+        "scenarios": [
+          "maximum_concurrent_users",
+          "burst_traffic_spike",
+          "rapid_fire_requests",
+          "connection_pool_exhaustion"
+        ]
+      },
+      "endurance_test": {
+        "description": "Sustained load over time",
+        "concurrent_users": 25,
+        "duration_seconds": 1800,
+        "scenarios": [
+          "memory_leak_detection",
+          "connection_leak_detection",
+          "performance_degradation_check",
+          "cache_effectiveness"
+        ]
+      }
+    },
+    "security_tests": {
+      "penetration_tests": [
+        "sql_injection",
+        "xss_attacks",
+        "csrf_attacks",
+        "authorization_bypass",
+        "jwt_manipulation",
+        "rate_limiting",
+        "brute_force_protection"
+      ],
+      "vulnerability_scan": [
+        "weak_password_detection",
+        "input_validation",
+        "command_injection",
+        "path_traversal",
+        "information_disclosure"
+      ],
+      "compliance_validation": [
+        "password_hashing",
+        "data_encryption",
+        "audit_logging",
+        "pci_dss_compliance",
+        "gdpr_compliance"
+      ]
+    },
+    "contract_tests": {
+      "openapi_contracts": [
+        "authentication_endpoints",
+        "booking_endpoints",
+        "property_endpoints",
+        "error_response_format",
+        "pagination_support"
+      ],
+      "consumer_contracts": [
+        "mobile_app_integration",
+        "web_app_integration",
+        "payment_gateway_integration",
+        "email_service_integration",
+        "analytics_service_integration"
+      ]
+    },
+    "chaos_tests": {
+      "network_failures": [
+        "timeout_handling",
+        "connection_reset",
+        "dns_failure",
+        "network_latency",
+        "bandwidth_limitation"
+      ],
+      "service_degradation": [
+        "database_pool_exhaustion",
+        "memory_pressure",
+        "cpu_throttling",
+        "cache_failure",
+        "email_service_failure"
+      ],
+      "data_corruption": [
+        "invalid_data_handling",
+        "malformed_json",
+        "constraint_violations",
+        "recovery_from_corruption"
+      ]
+    }
+  },
+  "test_data": {
+    "users": {
+      "admin": {
+        "username": "admin",
+        "password": "Admin123!@#",
+        "role": "ADMIN"
+      },
+      "regular_user": {
+        "username": "testuser",
+        "password": "Test123!@#",
+        "role": "USER"
+      }
+    },
+    "properties": [
+      {
+        "name": "Test Hotel",
+        "address": "123 Test St",
+        "city": "Test City",
+        "rooms": 50
+      }
+    ],
+    "test_dates": {
+      "check_in": "2025-12-01",
+      "check_out": "2025-12-05"
+    }
+  },
+  "performance_thresholds": {
+    "response_time_p95": 2000,
+    "response_time_p99": 3000,
+    "throughput_min": 10,
+    "success_rate_min": 95.0,
+    "error_rate_max": 5.0
+  },
+  "security_requirements": {
+    "authentication": "JWT",
+    "password_hashing": "bcrypt",
+    "tls_version": "1.2+",
+    "session_timeout": 3600,
+    "max_login_attempts": 5
+  }
+}

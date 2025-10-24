@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email Address</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+        .verification-code {
+            background-color: #f9f9f9;
+            border: 2px dashed #667eea;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #667eea;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Email Verification</h1>
+    </div>
+
+    <div class="content">
+        <p>Hello <span th:text="${firstName}">there</span>,</p>
+
+        <p>Please verify your email address to complete your registration with West Bethel Motel.</p>
+
+        <div style="text-align: center;">
+            <a th:href="${verificationLink}" class="button">Verify Email Address</a>
+        </div>
+
+        <p style="margin-top: 30px;">Or use this verification code:</p>
+
+        <div class="verification-code" th:if="${verificationCode}" th:text="${verificationCode}">
+            ABC123
+        </div>
+
+        <p style="font-size: 14px; color: #666666; margin-top: 30px;">
+            <strong>Important:</strong> This verification link will expire in <span th:text="${expiryHours ?: '24'}">24</span> hours for security reasons.
+        </p>
+
+        <p style="font-size: 14px; color: #666666;">
+            If you didn't request this verification, please ignore this email or contact our support team if you have concerns.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>West Bethel Motel | 123 Mountain View Road, West Bethel, VT 05001</p>
+        <p style="margin-top: 10px; font-size: 11px;">
+            This is an automated email. Please do not reply to this message.
+        </p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,235 @@
+groups:
+  - name: application_alerts
+    interval: 30s
+    rules:
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: rate(http_server_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for the last 5 minutes (current: {{ $value }})"
+
+      # Response Time Alerts
+      - alert: SlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "Slow response time detected"
+          description: "95th percentile response time is above 1 second (current: {{ $value }}s)"
+
+      - alert: VerySlowResponseTime
+        expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "Very slow response time detected"
+          description: "95th percentile response time is above 2 seconds (current: {{ $value }}s)"
+
+      # Payment Alerts
+      - alert: HighPaymentFailureRate
+        expr: rate(payments_failure_total[10m]) / (rate(payments_success_total[10m]) + rate(payments_failure_total[10m])) > 0.10
+        for: 10m
+        labels:
+          severity: critical
+          component: payments
+        annotations:
+          summary: "High payment failure rate"
+          description: "Payment failure rate is above 10% (current: {{ $value }})"
+
+      # Authentication Alerts
+      - alert: HighAuthFailureRate
+        expr: rate(auth_failure_total[5m]) / (rate(auth_success_total[5m]) + rate(auth_failure_total[5m])) > 0.20
+        for: 5m
+        labels:
+          severity: warning
+          component: authentication
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is above 20% (current: {{ $value }})"
+
+      - alert: AuthenticationFailureSpike
+        expr: rate(auth_failure_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "Authentication failure spike detected"
+          description: "More than 10 authentication failures per second (current: {{ $value }}/s)"
+
+      # Cache Alerts
+      - alert: HighCacheMissRate
+        expr: rate(cache_misses_total[10m]) / (rate(cache_hits_total[10m]) + rate(cache_misses_total[10m])) > 0.50
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High cache miss rate"
+          description: "Cache miss rate is above 50% (current: {{ $value }})"
+
+      # Email Queue Alerts
+      - alert: LargeEmailQueue
+        expr: email_queue_size > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: notifications
+        annotations:
+          summary: "Large email queue size"
+          description: "Email queue has more than 1000 pending emails (current: {{ $value }})"
+
+      - alert: EmailQueueGrowing
+        expr: rate(email_queue_size[10m]) > 0
+        for: 30m
+        labels:
+          severity: critical
+          component: notifications
+        annotations:
+          summary: "Email queue is growing"
+          description: "Email queue size has been continuously growing for 30 minutes"
+
+      # Database Alerts
+      - alert: HighDatabaseConnectionUsage
+        expr: database_connections_active / database_connections_max > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High database connection pool usage"
+          description: "Database connection pool is above 80% capacity (current: {{ $value }})"
+
+      - alert: CriticalDatabaseConnectionUsage
+        expr: database_connections_active / database_connections_max > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Critical database connection pool usage"
+          description: "Database connection pool is above 95% capacity (current: {{ $value }})"
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(database_query_time_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries"
+          description: "95th percentile database query time is above 1 second (current: {{ $value }}s)"
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Memory Alerts
+      - alert: HighMemoryUsage
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "JVM heap memory usage is above 80% (current: {{ $value }})"
+
+      - alert: CriticalMemoryUsage
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.90
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Critical memory usage"
+          description: "JVM heap memory usage is above 90% (current: {{ $value }})"
+
+      # CPU Alerts
+      - alert: HighCPUUsage
+        expr: system_cpu_usage > 0.80
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% (current: {{ $value }})"
+
+      # Disk Alerts
+      - alert: LowDiskSpace
+        expr: disk_free_bytes / disk_total_bytes < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Less than 10% disk space remaining (current: {{ $value }})"
+
+  - name: business_alerts
+    interval: 60s
+    rules:
+      # Booking Alerts
+      - alert: HighBookingCancellationRate
+        expr: rate(bookings_cancelled_total[1h]) / rate(bookings_created_total[1h]) > 0.30
+        for: 1h
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "High booking cancellation rate"
+          description: "More than 30% of bookings are being cancelled (current: {{ $value }})"
+
+      # Revenue Alerts
+      - alert: LowRevenueRate
+        expr: rate(revenue_total[1h]) < 100
+        for: 2h
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "Low revenue rate"
+          description: "Revenue generation is below expected threshold"
+
+  - name: health_alerts
+    interval: 30s
+    rules:
+      # Component Health
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL database is not responding"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache server is not responding"
+
+      - alert: ApplicationDown
+        expr: up{job="motel-booking-system"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: application
+        annotations:
+          summary: "Application is down"
+          description: "Motel booking system application is not responding"

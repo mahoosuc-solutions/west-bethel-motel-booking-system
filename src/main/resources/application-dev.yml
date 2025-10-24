@@ -1,0 +1,112 @@
+# Development Profile Configuration
+# Enable this profile to activate the DataSeeder component
+# Usage: mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# Or set environment variable: SPRING_PROFILES_ACTIVE=dev
+
+# ⚠️ SECURITY WARNING ⚠️
+# This profile is for DEVELOPMENT ONLY and has relaxed security settings.
+# NEVER use this profile in production environments.
+# Credentials should still be externalized via environment variables or .env file.
+
+spring:
+  application:
+    name: motel-booking-system
+
+  # Database Configuration - Development with PostgreSQL
+  # For local development, you can use environment variables or defaults
+  # For quick start with H2, use application-test.yml profile
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/motel_booking}
+    username: ${DATABASE_USERNAME:motel_booking}
+    password: ${DATABASE_PASSWORD:devpassword123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:5}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${DB_POOL_TIMEOUT:20000}
+
+  # Redis Configuration - Development
+  # ⚠️ WARNING: Redis password should be set even in development
+  cache:
+    type: redis
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:devredispass}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
+      timeout: ${REDIS_TIMEOUT:2000ms}
+
+  # JPA/Hibernate - Verbose logging for development
+  jpa:
+    show-sql: true
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Flyway - Development settings
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+  # Email Configuration - Development (optional mock)
+  # Use a test email service or MailHog for development
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:dev@localhost}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+# JWT Configuration - Development
+# ⚠️ WARNING: Use a different secret for production
+jwt:
+  secret: ${JWT_SECRET:ZGV2ZWxvcG1lbnRzZWNyZXRrZXlmb3J0ZXN0aW5nb25seWRvbm90dXNlaW5wcm9kdWN0aW9uMTIzNDU2Nzg5MA==}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# Logging - Verbose for development
+logging:
+  level:
+    root: INFO
+    com.westbethel.motel_booking: DEBUG
+    org.springframework: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.type.descriptor.sql.BasicExtractor: TRACE
+  pattern:
+    console: '%clr(%d{yyyy-MM-dd HH:mm:ss}){faint} %clr(%5p) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx'
+
+# Actuator - Full exposure for development
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on-param
+    include-exception: true

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to West Bethel Motel</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin-top: 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .button:hover {
+            opacity: 0.9;
+        }
+        .features {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .features ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 8px 0;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>West Bethel Motel</h1>
+    </div>
+
+    <div class="content">
+        <h2>Welcome, <span th:text="${firstName}">Guest</span>!</h2>
+
+        <p>Thank you for registering with West Bethel Motel. We're excited to have you as part of our community!</p>
+
+        <p>To complete your registration and start booking your perfect getaway, please verify your email address by clicking the button below:</p>
+
+        <div style="text-align: center;">
+            <a th:href="${verificationLink}" class="button">Verify Your Email</a>
+        </div>
+
+        <div class="features">
+            <strong>What you can do with your account:</strong>
+            <ul>
+                <li>Book rooms quickly and securely</li>
+                <li>View your booking history</li>
+                <li>Earn loyalty points with every stay</li>
+                <li>Manage your preferences and notifications</li>
+                <li>Access exclusive member rates</li>
+            </ul>
+        </div>
+
+        <p>If you have any questions, our support team is always here to help. Feel free to reach out to us at <a href="mailto:support@westbethelmotel.com">support@westbethelmotel.com</a>.</p>
+
+        <p>We look forward to hosting you!</p>
+
+        <p style="margin-top: 30px;">
+            <strong>Best regards,</strong><br>
+            The West Bethel Motel Team
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>West Bethel Motel | 123 Mountain View Road, West Bethel, VT 05001</p>
+        <p>
+            <a href="https://westbethelmotel.com/privacy">Privacy Policy</a> |
+            <a href="https://westbethelmotel.com/terms">Terms of Service</a>
+        </p>
+        <p style="margin-top: 10px; font-size: 11px;">
+            If you didn't create an account with us, please ignore this email.
+        </p>
+    </div>
+</div>
+</body>
+</html>

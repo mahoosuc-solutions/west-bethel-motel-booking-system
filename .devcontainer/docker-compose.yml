@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/java:17
+    container_name: motel-booking-dev
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    network_mode: service:db
+    environment:
+      - SPRING_PROFILES_ACTIVE=codespaces
+      - DATABASE_URL=jdbc:postgresql://localhost:5432/motel_booking_dev
+      - DATABASE_USERNAME=postgres
+      - DATABASE_PASSWORD=devpassword
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - SMTP_HOST=localhost
+      - SMTP_PORT=1025
+      - JWT_SECRET=dev-secret-key-change-in-production-minimum-256-bits-required
+      - JWT_EXPIRATION=86400000
+      - CORS_ALLOWED_ORIGINS=*
+      - FEATURE_FLAGS_ENABLED=true
+    depends_on:
+      - db
+      - redis
+      - mailhog
+
+  db:
+    image: postgres:15-alpine
+    container_name: motel-booking-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: motel_booking_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: motel-booking-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass devredispass
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    network_mode: service:db
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: motel-booking-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP server
+      - "8025:8025"  # Web UI
+    network_mode: service:db
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /tmp/mailhog
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: motel-booking-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    network_mode: service:db
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: motel-booking-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana-dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    network_mode: service:db
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    driver: bridge

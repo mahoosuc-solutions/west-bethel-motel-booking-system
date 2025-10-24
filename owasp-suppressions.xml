@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+    OWASP Dependency-Check Suppressions
+
+    This file contains suppression rules for false positives in the OWASP dependency check.
+    Each suppression should be documented with:
+    - Why it's a false positive
+    - When it can be removed
+    - Related issue/ticket number if applicable
+    -->
+
+    <!-- Example suppression - Remove or modify as needed
+    <suppress>
+        <notes>
+            Example: False positive for test dependency that doesn't affect production
+        </notes>
+        <packageUrl regex="true">^pkg:maven/org\.example/example\-artifact@.*$</packageUrl>
+        <cve>CVE-2024-XXXXX</cve>
+    </suppress>
+    -->
+
+    <!-- Add actual suppressions below as needed -->
+
+</suppressions>

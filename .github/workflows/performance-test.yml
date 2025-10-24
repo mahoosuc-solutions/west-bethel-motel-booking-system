@@ -1,0 +1,313 @@
+name: Performance Testing
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'  # Weekly on Sunday at 4 AM UTC
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      duration:
+        description: 'Test duration in seconds'
+        required: true
+        default: '300'
+        type: string
+      users:
+        description: 'Number of concurrent users'
+        required: true
+        default: '100'
+        type: string
+
+env:
+  JAVA_VERSION: '17'
+  GATLING_VERSION: '3.9.5'
+
+jobs:
+  load-test:
+    name: Gatling Load Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Set environment variables
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "TEST_ENV=staging" >> $GITHUB_ENV
+            echo "TEST_DURATION=300" >> $GITHUB_ENV
+            echo "TEST_USERS=100" >> $GITHUB_ENV
+          else
+            echo "TEST_ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+            echo "TEST_DURATION=${{ github.event.inputs.duration }}" >> $GITHUB_ENV
+            echo "TEST_USERS=${{ github.event.inputs.users }}" >> $GITHUB_ENV
+          fi
+
+      - name: Set test URL
+        run: |
+          if [ "${{ env.TEST_ENV }}" == "production" ]; then
+            echo "TEST_URL=https://www.westbethelmotel.com" >> $GITHUB_ENV
+          else
+            echo "TEST_URL=https://staging.westbethelmotel.com" >> $GITHUB_ENV
+          fi
+
+      - name: Download Gatling
+        run: |
+          wget https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/${{ env.GATLING_VERSION }}/gatling-charts-highcharts-bundle-${{ env.GATLING_VERSION }}-bundle.zip
+          unzip gatling-charts-highcharts-bundle-${{ env.GATLING_VERSION }}-bundle.zip
+          mv gatling-charts-highcharts-bundle-${{ env.GATLING_VERSION }} gatling
+
+      - name: Create Gatling simulation
+        run: |
+          mkdir -p gatling/user-files/simulations/westbethel
+          cat > gatling/user-files/simulations/westbethel/MotelBookingSimulation.scala << 'EOF'
+          package westbethel
+
+          import io.gatling.core.Predef._
+          import io.gatling.http.Predef._
+          import scala.concurrent.duration._
+
+          class MotelBookingSimulation extends Simulation {
+            val baseUrl = sys.env.getOrElse("TEST_URL", "http://localhost:8080")
+            val users = sys.env.getOrElse("TEST_USERS", "100").toInt
+            val duration = sys.env.getOrElse("TEST_DURATION", "300").toInt
+
+            val httpProtocol = http
+              .baseUrl(baseUrl)
+              .acceptHeader("application/json")
+              .contentTypeHeader("application/json")
+
+            val scn = scenario("Motel Booking System Load Test")
+              .exec(http("Health Check")
+                .get("/actuator/health")
+                .check(status.is(200)))
+              .pause(1)
+              .exec(http("Get Available Rooms")
+                .get("/api/rooms/available")
+                .queryParam("checkIn", "2025-01-15")
+                .queryParam("checkOut", "2025-01-17")
+                .check(status.is(200)))
+              .pause(2)
+              .exec(http("Search Rooms by Type")
+                .get("/api/rooms/search")
+                .queryParam("roomType", "DELUXE")
+                .check(status.is(200)))
+              .pause(1)
+
+            setUp(
+              scn.inject(
+                rampUsers(users).during(30.seconds),
+                constantUsersPerSec(users / 10).during(duration.seconds)
+              )
+            ).protocols(httpProtocol)
+              .assertions(
+                global.responseTime.max.lt(5000),
+                global.responseTime.mean.lt(1000),
+                global.successfulRequests.percent.gt(95)
+              )
+          }
+          EOF
+
+      - name: Run Gatling load test
+        env:
+          TEST_URL: ${{ env.TEST_URL }}
+          TEST_USERS: ${{ env.TEST_USERS }}
+          TEST_DURATION: ${{ env.TEST_DURATION }}
+        run: |
+          cd gatling
+          ./bin/gatling.sh -s westbethel.MotelBookingSimulation -rf ../gatling-results
+
+      - name: Upload Gatling results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: gatling-results
+          path: gatling-results/
+
+      - name: Parse performance metrics
+        id: metrics
+        run: |
+          # Parse Gatling simulation.log for metrics
+          if [ -f "gatling-results/*/simulation.log" ]; then
+            MEAN_RT=$(grep -E "^REQUEST" gatling-results/*/simulation.log | awk -F'\t' '{sum+=$6; count++} END {if(count>0) print int(sum/count); else print 0}')
+            P95_RT=$(grep -E "^REQUEST" gatling-results/*/simulation.log | awk -F'\t' '{print $6}' | sort -n | awk '{a[NR]=$1} END {print a[int(NR*0.95)]}')
+            SUCCESS_RATE=$(grep -E "^REQUEST" gatling-results/*/simulation.log | awk -F'\t' '{if($5=="OK") ok++; total++} END {if(total>0) print (ok/total*100); else print 0}')
+
+            echo "mean_response_time=$MEAN_RT" >> $GITHUB_OUTPUT
+            echo "p95_response_time=$P95_RT" >> $GITHUB_OUTPUT
+            echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compare with baseline
+        run: |
+          BASELINE_MEAN=1000
+          BASELINE_P95=3000
+          BASELINE_SUCCESS=95
+
+          MEAN=${{ steps.metrics.outputs.mean_response_time }}
+          P95=${{ steps.metrics.outputs.p95_response_time }}
+          SUCCESS=${{ steps.metrics.outputs.success_rate }}
+
+          echo "Performance Results:"
+          echo "Mean Response Time: ${MEAN}ms (Baseline: ${BASELINE_MEAN}ms)"
+          echo "P95 Response Time: ${P95}ms (Baseline: ${BASELINE_P95}ms)"
+          echo "Success Rate: ${SUCCESS}% (Baseline: ${BASELINE_SUCCESS}%)"
+
+          if [ $(echo "$MEAN > $BASELINE_MEAN * 1.2" | bc) -eq 1 ]; then
+            echo "WARNING: Mean response time degraded by >20%"
+            echo "performance_degradation=true" >> $GITHUB_ENV
+          fi
+
+          if [ $(echo "$SUCCESS < $BASELINE_SUCCESS" | bc) -eq 1 ]; then
+            echo "WARNING: Success rate below baseline"
+            echo "performance_degradation=true" >> $GITHUB_ENV
+          fi
+
+      - name: Generate performance report
+        run: |
+          cat > performance-report.md << EOF
+          # Performance Test Report
+
+          **Environment:** ${{ env.TEST_ENV }}
+          **Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          **Test Duration:** ${{ env.TEST_DURATION }}s
+          **Concurrent Users:** ${{ env.TEST_USERS }}
+
+          ## Results
+
+          | Metric | Value | Baseline | Status |
+          |--------|-------|----------|--------|
+          | Mean Response Time | ${{ steps.metrics.outputs.mean_response_time }}ms | 1000ms | $([ ${{ steps.metrics.outputs.mean_response_time }} -lt 1200 ] && echo "✅" || echo "⚠️") |
+          | P95 Response Time | ${{ steps.metrics.outputs.p95_response_time }}ms | 3000ms | $([ ${{ steps.metrics.outputs.p95_response_time }} -lt 3600 ] && echo "✅" || echo "⚠️") |
+          | Success Rate | ${{ steps.metrics.outputs.success_rate }}% | 95% | $([ $(echo "${{ steps.metrics.outputs.success_rate }} > 95" | bc) -eq 1 ] && echo "✅" || echo "⚠️") |
+
+          ## Analysis
+
+          $(if [ "${{ env.performance_degradation }}" == "true" ]; then
+            echo "⚠️ Performance degradation detected. Investigation required."
+          else
+            echo "✅ Performance within acceptable limits."
+          fi)
+
+          Full Gatling report available in artifacts.
+          EOF
+
+          cat performance-report.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report
+          path: performance-report.md
+
+      - name: Alert on degradation
+        if: env.performance_degradation == 'true'
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "Performance degradation detected!",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Performance Test Alert*\n*Environment:* ${{ env.TEST_ENV }}\n*Mean RT:* ${{ steps.metrics.outputs.mean_response_time }}ms\n*P95 RT:* ${{ steps.metrics.outputs.p95_response_time }}ms\n*Success Rate:* ${{ steps.metrics.outputs.success_rate }}%\n\nPerformance has degraded compared to baseline."
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  stress-test:
+    name: Stress Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install K6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Set test URL
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "TEST_URL=https://www.westbethelmotel.com" >> $GITHUB_ENV
+          else
+            echo "TEST_URL=https://staging.westbethelmotel.com" >> $GITHUB_ENV
+          fi
+
+      - name: Create K6 stress test script
+        run: |
+          cat > stress-test.js << 'EOF'
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export let options = {
+            stages: [
+              { duration: '2m', target: 100 },
+              { duration: '5m', target: 100 },
+              { duration: '2m', target: 200 },
+              { duration: '5m', target: 200 },
+              { duration: '2m', target: 300 },
+              { duration: '5m', target: 300 },
+              { duration: '10m', target: 0 },
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<3000'],
+              http_req_failed: ['rate<0.1'],
+            },
+          };
+
+          const BASE_URL = __ENV.TEST_URL || 'http://localhost:8080';
+
+          export default function () {
+            const responses = http.batch([
+              ['GET', `${BASE_URL}/actuator/health`],
+              ['GET', `${BASE_URL}/api/rooms/available?checkIn=2025-01-15&checkOut=2025-01-17`],
+            ]);
+
+            check(responses[0], {
+              'health check status is 200': (r) => r.status === 200,
+            });
+
+            check(responses[1], {
+              'room search status is 200': (r) => r.status === 200,
+            });
+
+            sleep(1);
+          }
+          EOF
+
+      - name: Run K6 stress test
+        env:
+          TEST_URL: ${{ env.TEST_URL }}
+        run: k6 run stress-test.js --out json=stress-test-results.json
+
+      - name: Upload K6 results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: k6-stress-test-results
+          path: stress-test-results.json

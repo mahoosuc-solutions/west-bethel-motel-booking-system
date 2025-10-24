@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: motel-booking-config
+  namespace: production
+  labels:
+    app: motel-booking
+data:
+  # Database Configuration
+  database.url: "jdbc:postgresql://postgres-service:5432/motel_booking"
+  database.driver: "org.postgresql.Driver"
+  database.hikari.maximum-pool-size: "20"
+  database.hikari.minimum-idle: "5"
+  database.hikari.connection-timeout: "30000"
+  database.hikari.idle-timeout: "600000"
+  database.hikari.max-lifetime: "1800000"
+
+  # Redis Configuration
+  redis.host: "redis-service"
+  redis.port: "6379"
+  redis.timeout: "2000"
+  redis.lettuce.pool.max-active: "16"
+  redis.lettuce.pool.max-idle: "8"
+  redis.lettuce.pool.min-idle: "2"
+
+  # Application Configuration
+  server.port: "8080"
+  server.shutdown: "graceful"
+  spring.lifecycle.timeout-per-shutdown-phase: "20s"
+
+  # Logging Configuration
+  logging.level.root: "INFO"
+  logging.level.com.westbethel: "DEBUG"
+  logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  logging.pattern.file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+  # JPA Configuration
+  spring.jpa.show-sql: "false"
+  spring.jpa.hibernate.ddl-auto: "validate"
+  spring.jpa.open-in-view: "false"
+  spring.jpa.properties.hibernate.jdbc.batch_size: "20"
+  spring.jpa.properties.hibernate.order_inserts: "true"
+  spring.jpa.properties.hibernate.order_updates: "true"
+
+  # Cache Configuration
+  spring.cache.type: "redis"
+  spring.cache.redis.time-to-live: "3600000"
+
+  # Actuator Configuration
+  management.endpoints.web.base-path: "/actuator"
+  management.endpoints.web.exposure.include: "health,info,metrics,prometheus"
+  management.endpoint.health.show-details: "when-authorized"
+  management.health.livenessstate.enabled: "true"
+  management.health.readinessstate.enabled: "true"
+
+  # Metrics Configuration
+  management.metrics.export.prometheus.enabled: "true"
+  management.metrics.distribution.percentiles-histogram.http.server.requests: "true"
+
+  # Security Configuration
+  security.jwt.expiration: "3600000"
+  security.jwt.refresh-expiration: "86400000"
+  security.password.strength: "strong"
+
+  # Email Configuration (non-sensitive)
+  spring.mail.host: "smtp.gmail.com"
+  spring.mail.port: "587"
+  spring.mail.properties.mail.smtp.auth: "true"
+  spring.mail.properties.mail.smtp.starttls.enable: "true"
+
+  # CORS Configuration
+  cors.allowed-origins: "https://www.westbethelmotel.com,https://admin.westbethelmotel.com"
+  cors.allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+  cors.allowed-headers: "*"
+  cors.allow-credentials: "true"
+  cors.max-age: "3600"

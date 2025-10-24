@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # Test PostgreSQL Database
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: motel-booking-test-db
+    environment:
+      POSTGRES_DB: motel_booking_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d motel_booking_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Redis Cache
+  redis-test:
+    image: redis:7-alpine
+    container_name: motel-booking-test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Test Mail Server (MailHog)
+  mailhog-test:
+    image: mailhog/mailhog:latest
+    container_name: motel-booking-test-mail
+    ports:
+      - "1026:1025"  # SMTP
+      - "8026:8025"  # Web UI
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # K6 Load Testing Tool
+  k6-test:
+    image: grafana/k6:latest
+    container_name: motel-booking-k6
+    volumes:
+      - ./k6-scripts:/scripts
+      - ./k6-results:/results
+    environment:
+      - BASE_URL=http://app-test:8080
+    command: sleep infinity
+    depends_on:
+      - app-test
+    profiles:
+      - load-test
+
+  # Application Under Test
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: motel-booking-test-app
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-test:5432/motel_booking_test
+      SPRING_DATASOURCE_USERNAME: test_user
+      SPRING_DATASOURCE_PASSWORD: test_password
+      SPRING_REDIS_HOST: redis-test
+      SPRING_REDIS_PORT: 6379
+      SPRING_MAIL_HOST: mailhog-test
+      SPRING_MAIL_PORT: 1025
+      JAVA_OPTS: -Xmx512m -Xms256m
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      mailhog-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    profiles:
+      - integration-test
+
+  # Chaos Testing Tool (Toxiproxy)
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:latest
+    container_name: motel-booking-toxiproxy
+    ports:
+      - "8474:8474"  # API
+      - "5434:5434"  # Proxied PostgreSQL
+      - "6381:6381"  # Proxied Redis
+    command: -host=0.0.0.0 -port=8474
+    profiles:
+      - chaos-test
+
+  # Prometheus (for monitoring during tests)
+  prometheus-test:
+    image: prom/prometheus:latest
+    container_name: motel-booking-test-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus-test.yml:/etc/prometheus/prometheus.yml
+      - test_prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    profiles:
+      - monitoring
+
+  # Grafana (for visualization during tests)
+  grafana-test:
+    image: grafana/grafana:latest
+    container_name: motel-booking-test-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=test
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - test_grafana_data:/var/lib/grafana
+    profiles:
+      - monitoring
+
+volumes:
+  test_postgres_data:
+  test_prometheus_data:
+  test_grafana_data:
+
+networks:
+  default:
+    name: motel-booking-test-network

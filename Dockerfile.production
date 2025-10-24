@@ -1,0 +1,143 @@
+# Production-Optimized Multi-stage Dockerfile for West Bethel Motel Booking System
+# Maximum security, performance, and minimal attack surface
+
+#==============================================================================
+# Build Stage - Maven Build
+#==============================================================================
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
+
+# Build arguments
+ARG BUILD_VERSION=0.0.1-SNAPSHOT
+ARG MAVEN_OPTS="-Xmx2048m"
+ARG SKIP_TESTS=true
+
+# Set working directory
+WORKDIR /build
+
+# Copy dependency definitions first (better layer caching)
+COPY pom.xml .
+COPY .mvn .mvn
+
+# Download dependencies offline (cached layer)
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build application with production profile
+RUN mvn clean package -B \
+    -DskipTests=${SKIP_TESTS} \
+    -Pprod \
+    -Dversion=${BUILD_VERSION} && \
+    mv target/motel-booking-system-${BUILD_VERSION}.jar target/app.jar && \
+    # Extract layers for better image optimization
+    java -Djarmode=layertools -jar target/app.jar extract --destination target/extracted
+
+#==============================================================================
+# Runtime Stage - Minimal Production Image
+#==============================================================================
+FROM eclipse-temurin:17-jre-alpine AS runtime
+
+# Metadata
+LABEL maintainer="West Bethel Motel <noreply@westbethelmotel.com>" \
+      description="West Bethel Motel Booking System - Production Runtime" \
+      version="1.0.0" \
+      org.opencontainers.image.source="https://github.com/westbethel/motel-booking-system" \
+      org.opencontainers.image.vendor="West Bethel Motel" \
+      org.opencontainers.image.licenses="Proprietary"
+
+# Install security updates and minimal runtime dependencies
+RUN apk update && \
+    apk upgrade --no-cache && \
+    apk add --no-cache \
+        curl=~8 \
+        tini=~0.19 \
+        tzdata && \
+    # Set timezone
+    cp /usr/share/zoneinfo/America/New_York /etc/localtime && \
+    echo "America/New_York" > /etc/timezone && \
+    # Clean up
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
+
+# Create dedicated non-root user and group
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup -h /app -s /bin/false
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+        /app \
+        /var/log/motel-booking \
+        /tmp/motel-booking && \
+    chown -R appuser:appgroup \
+        /app \
+        /var/log/motel-booking \
+        /tmp/motel-booking && \
+    chmod 750 /app && \
+    chmod 770 /var/log/motel-booking /tmp/motel-booking
+
+# Set working directory
+WORKDIR /app
+
+# Copy application layers from builder (optimized layer caching)
+COPY --from=builder --chown=appuser:appgroup /build/target/extracted/dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /build/target/extracted/spring-boot-loader/ ./
+COPY --from=builder --chown=appuser:appgroup /build/target/extracted/snapshot-dependencies/ ./
+COPY --from=builder --chown=appuser:appgroup /build/target/extracted/application/ ./
+
+# Switch to non-root user
+USER appuser:appgroup
+
+# Environment variables for production
+ENV SPRING_PROFILES_ACTIVE=prod \
+    JAVA_TOOL_OPTIONS="\
+        -Xms512m \
+        -Xmx1024m \
+        -XX:+UseG1GC \
+        -XX:MaxGCPauseMillis=100 \
+        -XX:+UseStringDeduplication \
+        -XX:+ParallelRefProcEnabled \
+        -XX:MaxRAMPercentage=75.0 \
+        -Djava.security.egd=file:/dev/./urandom \
+        -Djava.awt.headless=true \
+        -Dfile.encoding=UTF-8 \
+        -Duser.timezone=America/New_York \
+        -XX:+ExitOnOutOfMemoryError \
+        -XX:+HeapDumpOnOutOfMemoryError \
+        -XX:HeapDumpPath=/var/log/motel-booking/heap_dump.hprof" \
+    SERVER_PORT=8080 \
+    MANAGEMENT_PORT=8081 \
+    LOG_PATH=/var/log/motel-booking \
+    TMP_DIR=/tmp/motel-booking
+
+# Expose ports
+EXPOSE 8080 8081
+
+# Health check with proper timeouts
+HEALTHCHECK --interval=30s \
+            --timeout=10s \
+            --start-period=120s \
+            --retries=3 \
+    CMD curl -f -s http://localhost:8081/actuator/health/readiness || exit 1
+
+# Use tini as init system (proper signal handling and zombie reaping)
+ENTRYPOINT ["/sbin/tini", "-g", "--"]
+
+# Run Spring Boot application using layered approach
+CMD ["java", \
+     "-cp", \
+     "BOOT-INF/classes:BOOT-INF/lib/*", \
+     "com.westbethel.MotelBookingApplication"]
+
+#==============================================================================
+# Security Hardening Notes:
+# - Non-root user (UID 1001)
+# - Minimal base image (Alpine)
+# - Regular security updates applied
+# - Proper file permissions
+# - Limited exposed ports
+# - Health checks for orchestration
+# - Memory limits and GC tuning
+# - Proper signal handling with tini
+# - No secrets in environment variables
+# - Layered JAR for optimal caching
+#==============================================================================

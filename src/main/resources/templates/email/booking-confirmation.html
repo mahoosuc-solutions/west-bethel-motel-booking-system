@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .confirmation-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .confirmation-number {
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 10px 0;
+        }
+        .booking-details {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #666666;
+        }
+        .total-row {
+            background-color: #667eea;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>Booking Confirmed!</h1>
+    </div>
+
+    <div class="content">
+        <p>Dear <span th:text="${firstName}">Guest</span>,</p>
+
+        <p>Thank you for choosing West Bethel Motel! Your reservation has been confirmed.</p>
+
+        <div class="confirmation-box">
+            <div style="font-size: 14px;">Confirmation Number</div>
+            <div class="confirmation-number" th:text="${confirmationNumber}">WBM-123456</div>
+        </div>
+
+        <div class="booking-details">
+            <h3 style="margin-top: 0; color: #667eea;">Reservation Details</h3>
+
+            <div class="detail-row">
+                <span class="detail-label">Room Type:</span>
+                <span th:text="${roomType}">Deluxe King</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Check-in:</span>
+                <span th:text="${#temporals.format(checkInDate, 'EEEE, MMMM dd, yyyy')}">Date</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Check-out:</span>
+                <span th:text="${#temporals.format(checkOutDate, 'EEEE, MMMM dd, yyyy')}">Date</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Nights:</span>
+                <span th:text="${numberOfNights}">2</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Guests:</span>
+                <span th:text="${numberOfGuests}">2</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Special Requests:</span>
+                <span th:text="${specialRequests ?: 'None'}">None</span>
+            </div>
+        </div>
+
+        <div class="total-row">
+            <span>Total Amount:</span>
+            <span th:text="'$' + ${totalAmount}">$299.00</span>
+        </div>
+
+        <p style="margin-top: 30px;"><strong>Check-in Information:</strong></p>
+        <ul>
+            <li>Check-in time: 3:00 PM</li>
+            <li>Check-out time: 11:00 AM</li>
+            <li>Early check-in subject to availability</li>
+            <li>Photo ID and credit card required at check-in</li>
+        </ul>
+
+        <p><strong>Location:</strong><br>
+            West Bethel Motel<br>
+            123 Mountain View Road<br>
+            West Bethel, VT 05001<br>
+            Phone: (555) 123-4567
+        </p>
+
+        <p style="margin-top: 30px;">We look forward to welcoming you!</p>
+
+        <p style="font-size: 12px; color: #666666; margin-top: 30px;">
+            Need to modify or cancel your reservation? Visit our website or contact us at reservations@westbethelmotel.com
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>West Bethel Motel | 123 Mountain View Road, West Bethel, VT 05001</p>
+        <p style="margin-top: 10px; font-size: 11px;">
+            This is a booking confirmation. Please keep this email for your records.
+        </p>
+    </div>
+</div>
+</body>
+</html>

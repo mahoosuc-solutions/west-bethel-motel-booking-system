@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty Points Earned</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .points-badge {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #ffffff;
+            padding: 30px;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .points-number {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        .points-label {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .balance-box {
+            background-color: #f9f9f9;
+            border: 2px solid #fa709a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .rewards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .reward-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f4f4f4;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .rewards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="header">
+        <h1>You Earned Points!</h1>
+    </div>
+
+    <div class="content">
+        <p style="text-align: center; font-size: 18px;">Congratulations, <span th:text="${firstName}">Guest</span>!</p>
+
+        <div class="points-badge">
+            <div class="points-number" th:text="'+' + ${pointsEarned}">+50</div>
+            <div class="points-label">POINTS</div>
+        </div>
+
+        <p style="text-align: center;">You've earned loyalty points with your recent stay!</p>
+
+        <div class="balance-box">
+            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Your Total Balance</div>
+            <div style="font-size: 36px; font-weight: bold; color: #fa709a;" th:text="${totalPoints} + ' Points'">250 Points</div>
+            <div style="font-size: 14px; color: #666; margin-top: 10px;">Previous Balance: <span th:text="${previousBalance}">200</span> points</div>
+        </div>
+
+        <p><strong>Transaction Details:</strong></p>
+        <ul>
+            <li>Booking Reference: <span th:text="${bookingReference}">WBM-123456</span></li>
+            <li>Points Earned: <span th:text="${pointsEarned}">50</span></li>
+            <li>Earned On: <span th:text="${#temporals.format(earnedAt, 'MMMM dd, yyyy')}">Date</span></li>
+            <li th:if="${multiplier > 1}">Special Bonus: <span th:text="${multiplier}">2</span>x points!</li>
+        </ul>
+
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="margin-top: 0;">Ways to Redeem Your Points</h3>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Free night stay (500 points)</li>
+                <li>Room upgrade (200 points)</li>
+                <li>Late checkout (100 points)</li>
+                <li>Dining credit (150 points)</li>
+            </ul>
+        </div>
+
+        <div class="rewards-grid">
+            <div class="reward-item">
+                <div style="font-size: 32px;">🏆</div>
+                <div style="font-weight: bold; margin-top: 10px;">Silver Status</div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;" th:text="${pointsToNextTier ?: '250'} + ' points to Gold'">250 to Gold</div>
+            </div>
+            <div class="reward-item">
+                <div style="font-size: 32px;">🎁</div>
+                <div style="font-weight: bold; margin-top: 10px;">Next Reward</div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">Free upgrade at 200 pts</div>
+            </div>
+        </div>
+
+        <p style="margin-top: 30px; text-align: center;">
+            <a href="https://westbethelmotel.com/loyalty" style="color: #fa709a; text-decoration: none; font-weight: 600;">View Your Loyalty Account →</a>
+        </p>
+
+        <p style="margin-top: 30px;">Keep earning points with every booking and enjoy exclusive member benefits!</p>
+
+        <p style="margin-top: 30px;">
+            <strong>Best regards,</strong><br>
+            The West Bethel Motel Rewards Team
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>West Bethel Motel | 123 Mountain View Road, West Bethel, VT 05001</p>
+        <p style="margin-top: 10px;">
+            <a href="https://westbethelmotel.com/loyalty/terms" style="color: #fa709a; text-decoration: none;">Rewards Terms & Conditions</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

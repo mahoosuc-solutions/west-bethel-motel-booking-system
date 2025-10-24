@@ -1,0 +1,26 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: motel-booking-pdb
+  namespace: production
+  labels:
+    app: motel-booking
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: motel-booking
+      tier: backend
+  unhealthyPodEvictionPolicy: AlwaysAllow
+---
+# Alternative: Use maxUnavailable
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
+# metadata:
+#   name: motel-booking-pdb
+#   namespace: production
+# spec:
+#   maxUnavailable: 1
+#   selector:
+#     matchLabels:
+#       app: motel-booking

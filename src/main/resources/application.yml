@@ -1,0 +1,262 @@
+# Default Application Configuration
+# This configuration serves as the base for all profiles
+#
+# ⚠️ SECURITY NOTICE ⚠️
+# All sensitive values MUST be provided via environment variables.
+# NO hardcoded credentials should exist in this file.
+#
+# Profile Selection:
+# - Use 'prod' profile for production: SPRING_PROFILES_ACTIVE=prod
+# - Use 'dev' profile for development: SPRING_PROFILES_ACTIVE=dev
+# - Tests automatically use the test profile
+#
+# Recommended: Set SPRING_PROFILES_ACTIVE=prod as default for safety
+
+spring:
+  application:
+    name: motel-booking-system
+
+  # Active Profile Selection
+  # Default to production profile for security
+  # Override with SPRING_PROFILES_ACTIVE environment variable
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:prod}
+
+  # Database Configuration
+  # ⚠️ REQUIRED: All database credentials must be provided via environment variables
+  # See docs/ENVIRONMENT_VARIABLES.md for complete list
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/motel_booking}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    # HikariCP Connection Pool Configuration
+    hikari:
+      # Pool size = 2 * CPU cores (default 20 for 10-core system)
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:10}
+      # Connection timeout (30 seconds)
+      connection-timeout: 30000
+      # Idle timeout (10 minutes)
+      idle-timeout: 600000
+      # Max lifetime (30 minutes)
+      max-lifetime: 1800000
+      # Leak detection threshold (60 seconds)
+      leak-detection-threshold: 60000
+      # Connection test query
+      connection-test-query: SELECT 1
+      pool-name: MotelBookingPool
+      auto-commit: false
+      # Connection initialization
+      initialization-fail-timeout: 1
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        # Batch processing optimization
+        jdbc:
+          batch_size: 20
+          fetch_size: 50
+        order_inserts: true
+        order_updates: true
+        # Query optimization
+        query:
+          in_clause_parameter_padding: true
+        # Connection optimization
+        connection:
+          provider_disables_autocommit: true
+
+  # Flyway Migration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # Cache Configuration
+  cache:
+    type: redis
+
+  # Redis Configuration
+  # ⚠️ REQUIRED: REDIS_PASSWORD must be set
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+
+  # Email Configuration
+  # ⚠️ REQUIRED: Email credentials must be set via environment variables
+  # Supports Gmail, SendGrid, or any SMTP provider
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          timeout: 5000
+          connectiontimeout: 5000
+          writetimeout: 5000
+
+# Server Configuration
+server:
+  forward-headers-strategy: framework
+  port: ${SERVER_PORT:8080}
+  max-http-header-size: 8KB
+  # Response compression for better network performance
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+  # HTTP/2 support for multiplexing
+  http2:
+    enabled: ${HTTP2_ENABLED:true}
+  tomcat:
+    max-swallow-size: 10MB
+    max-http-post-size: 10MB
+    connection-timeout: 30s
+    # Tomcat thread pool tuning
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}
+      min-spare: ${TOMCAT_MIN_SPARE_THREADS:10}
+    # Accept queue size
+    accept-count: ${TOMCAT_ACCEPT_COUNT:100}
+    # Connection pool for async operations
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:10000}
+  servlet:
+    session:
+      timeout: 30m
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+# Multipart Configuration (File Uploads)
+spring.servlet.multipart:
+  max-file-size: 10MB
+  max-request-size: 10MB
+  enabled: true
+
+# Actuator Configuration
+# Limited exposure by default for security
+# Override in specific profiles as needed
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+      threshold: 10MB
+    mail:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${SPRING_PROFILES_ACTIVE:prod}
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 100ms,500ms,1s,2s
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.westbethel.motel_booking: INFO
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [%X{correlationId}] - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} [%X{correlationId}] - %msg%n"
+  file:
+    name: logs/application.log
+    max-size: 10MB
+    max-history: 30
+    total-size-cap: 300MB
+
+# JWT Configuration
+# ⚠️ REQUIRED: JWT_SECRET must be set (minimum 256-bit Base64 encoded)
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# Security Configuration
+spring.security:
+  filter:
+    order: 1
+
+security:
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${RATE_LIMIT_REQUESTS_PER_MINUTE:100}
+
+# Notification Configuration
+notification:
+  from-address: ${NOTIFICATION_FROM_ADDRESS:noreply@westbethelmotel.com}
+  from-name: ${NOTIFICATION_FROM_NAME:West Bethel Motel}
+  queue:
+    enabled: ${NOTIFICATION_QUEUE_ENABLED:true}
+    max-retries: ${NOTIFICATION_MAX_RETRIES:5}
+    retry-delay: 60000  # 1 minute in milliseconds
+
+# Twilio SMS Configuration (Future Feature - Currently Disabled)
+twilio:
+  enabled: ${TWILIO_ENABLED:false}
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  phone-number: ${TWILIO_PHONE_NUMBER:}
+
+# Frontend URL for email links
+frontend:
+  url: ${FRONTEND_URL:http://localhost:3000}
+
+# Monitoring and Alerting Configuration
+monitoring:
+  alerts:
+    enabled: ${MONITORING_ALERTS_ENABLED:true}
+    error-rate-threshold: ${ALERT_ERROR_RATE_THRESHOLD:0.05}
+    response-time-threshold: ${ALERT_RESPONSE_TIME_THRESHOLD:1000}
+    memory-threshold: ${ALERT_MEMORY_THRESHOLD:0.80}
+    db-pool-threshold: ${ALERT_DB_POOL_THRESHOLD:0.80}
+    cache-miss-threshold: ${ALERT_CACHE_MISS_THRESHOLD:0.50}
+    email-queue-threshold: ${ALERT_EMAIL_QUEUE_THRESHOLD:1000}

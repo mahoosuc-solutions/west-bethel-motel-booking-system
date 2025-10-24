@@ -1,0 +1,219 @@
+# Docker Compose Configuration for West Bethel Motel Booking System
+# Development and Testing Environment
+#
+# Usage:
+#   docker-compose up -d                    # Start all services
+#   docker-compose down                     # Stop all services
+#   docker-compose logs -f app              # View application logs
+#   docker-compose ps                       # View running services
+#
+# IMPORTANT:
+# - Ensure .env file exists with required credentials
+# - Run ./scripts/generate-secrets.sh to create .env file
+# - This configuration is for DEVELOPMENT ONLY
+# - Use orchestration tools (Kubernetes, ECS) for production
+
+version: '3.8'
+
+services:
+  #============================================================================
+  # PostgreSQL Database
+  #============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: motel-booking-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: motel_booking
+      POSTGRES_USER: ${DATABASE_USERNAME:-motel_booking}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-devpassword123}
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-motel_booking} -d motel_booking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - motel-network
+
+  #============================================================================
+  # Redis Cache
+  #============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: motel-booking-redis
+    restart: unless-stopped
+
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-devredispass}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+    networks:
+      - motel-network
+
+  #============================================================================
+  # Application Service
+  #============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_TESTS: "true"
+
+    container_name: motel-booking-app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    environment:
+      # Profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+
+      # Database
+      DATABASE_URL: jdbc:postgresql://postgres:5432/motel_booking
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-motel_booking}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-devpassword123}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-devredispass}
+      REDIS_SSL_ENABLED: false
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-ZGV2ZWxvcG1lbnRzZWNyZXRrZXlmb3J0ZXN0aW5nb25seWRvbm90dXNlaW5wcm9kdWN0aW9uMTIzNDU2Nzg5MA==}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+
+      # Email (optional - configure if needed)
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-dev@localhost}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+
+      # Server
+      SERVER_PORT: 8080
+
+      # JVM Options
+      JAVA_OPTS: >-
+        -Xms256m
+        -Xmx512m
+        -XX:+UseG1GC
+        -XX:MaxGCPauseMillis=200
+        -Djava.security.egd=file:/dev/./urandom
+
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+
+    volumes:
+      - app_logs:/var/log/motel-booking
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+    networks:
+      - motel-network
+
+  #============================================================================
+  # MailHog (Development Email Testing)
+  #============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: motel-booking-mailhog
+    restart: unless-stopped
+
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+
+    networks:
+      - motel-network
+
+  #============================================================================
+  # pgAdmin (Optional - Database Administration)
+  #============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: motel-booking-pgadmin
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@westbethelmotel.com
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+
+    ports:
+      - "5050:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    depends_on:
+      - postgres
+
+    networks:
+      - motel-network
+
+    profiles:
+      - tools
+
+#==============================================================================
+# Networks
+#==============================================================================
+networks:
+  motel-network:
+    driver: bridge
+    name: motel-booking-network
+
+#==============================================================================
+# Volumes
+#==============================================================================
+volumes:
+  postgres_data:
+    name: motel-booking-postgres-data
+
+  redis_data:
+    name: motel-booking-redis-data
+
+  app_logs:
+    name: motel-booking-app-logs
+
+  pgadmin_data:
+    name: motel-booking-pgadmin-data

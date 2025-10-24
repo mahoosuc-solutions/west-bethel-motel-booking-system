@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: motel-booking-service
+  namespace: production
+  labels:
+    app: motel-booking
+    tier: backend
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: actuator
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  selector:
+    app: motel-booking
+    tier: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: motel-booking-headless
+  namespace: production
+  labels:
+    app: motel-booking
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: motel-booking

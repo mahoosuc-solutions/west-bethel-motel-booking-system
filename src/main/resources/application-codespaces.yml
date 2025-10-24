@@ -1,0 +1,147 @@
+# Codespaces Development Configuration
+# This profile is automatically activated when running in GitHub Codespaces
+
+spring:
+  application:
+    name: west-bethel-motel-booking
+
+  profiles:
+    active: codespaces
+
+  # Database Configuration (PostgreSQL in Codespaces)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/motel_booking_dev
+    username: postgres
+    password: devpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  # Redis Configuration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: devredispass
+      timeout: 60000ms
+
+  # Email Configuration (Mailhog)
+  mail:
+    host: localhost
+    port: 1025
+    username: ''
+    password: ''
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+        test-connection: false
+
+  # Cache Configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+
+  # Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.westbethel.motel_booking: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+
+# Server Configuration
+server:
+  port: 8080
+  compression:
+    enabled: true
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+
+# Actuator Configuration (Monitoring)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,info,env,loggers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# JWT Configuration (Development)
+jwt:
+  secret: dev-secret-key-change-in-production-minimum-256-bits-required-for-security
+  expiration: 86400000
+
+# CORS Configuration (Allow all for development)
+cors:
+  allowed-origins: '*'
+  allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+  allowed-headers: '*'
+  allow-credentials: true
+  max-age: 3600
+
+# Feature Flags (All enabled for testing)
+feature:
+  flags:
+    enabled: true
+  mfa:
+    enabled: true
+    required: false
+  email:
+    notifications:
+      enabled: true
+  payment:
+    processing:
+      enabled: true
+      test-mode: true
+  analytics:
+    enabled: true
+    detailed-tracking: true
+  rollout:
+    percentage: 100
+    canary-enabled: false
+    canary-percentage: 10
+
+# Email Settings
+email:
+  from: noreply@westbethel-dev.com
+  from-name: West Bethel Motel (Dev)
+
+# Application Info
+info:
+  app:
+    name: West Bethel Motel Booking System
+    description: Hotel booking and management system
+    version: 1.0.0
+    environment: codespaces
