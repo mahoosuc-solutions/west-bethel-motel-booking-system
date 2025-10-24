@@ -16,6 +16,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 /**
@@ -138,7 +139,7 @@ public class EmailService {
     /**
      * Sends an HTML email with optional attachments.
      */
-    private void sendHtmlEmail(EmailMessage message) throws MessagingException {
+    private void sendHtmlEmail(EmailMessage message) throws MessagingException, UnsupportedEncodingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(
                 mimeMessage,
@@ -181,7 +182,7 @@ public class EmailService {
     /**
      * Sends a template-based email.
      */
-    private void sendTemplatedEmail(EmailMessage message) throws MessagingException {
+    private void sendTemplatedEmail(EmailMessage message) throws MessagingException, UnsupportedEncodingException {
         // Render the template
         Context context = new Context();
         if (message.getTemplateVariables() != null) {
