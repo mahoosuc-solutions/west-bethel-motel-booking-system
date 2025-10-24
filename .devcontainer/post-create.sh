@@ -29,7 +29,8 @@ echo -e "${BLUE}Configuring PostgreSQL...${NC}"
 sudo service postgresql start
 
 # Wait for PostgreSQL to be ready
-sleep 2
+sleep 3
+pg_isready -h localhost -p 5432 || sleep 2
 
 # Configure PostgreSQL to accept password authentication
 echo -e "${BLUE}Configuring PostgreSQL authentication...${NC}"
@@ -39,12 +40,23 @@ sudo sed -i 's/host    all             all             127.0.0.1\/32            
 
 # Reload PostgreSQL configuration
 sudo service postgresql reload
+sleep 1
 
-# Set password for postgres user
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'devpassword';"
+# Set password for postgres user (with explicit database and timeout)
+echo -e "${BLUE}Setting PostgreSQL password...${NC}"
+timeout 10 sudo -u postgres psql -d postgres -c "ALTER USER postgres WITH PASSWORD 'devpassword';" || {
+    echo -e "${YELLOW}Warning: Password setup command timed out or failed. Checking if we can connect...${NC}"
+}
 
 # Create development database
-sudo -u postgres createdb motel_booking_dev || true
+echo -e "${BLUE}Creating database...${NC}"
+timeout 10 sudo -u postgres createdb motel_booking_dev 2>/dev/null || echo -e "${YELLOW}Database may already exist${NC}"
+
+# Verify database connection works
+echo -e "${BLUE}Verifying database connection...${NC}"
+PGPASSWORD=devpassword timeout 5 psql -h localhost -U postgres -d motel_booking_dev -c "SELECT version();" > /dev/null 2>&1 && \
+    echo -e "${GREEN}✓ Database connection verified${NC}" || \
+    echo -e "${YELLOW}Warning: Could not verify database connection${NC}"
 
 echo -e "${GREEN}✓ PostgreSQL configured and running${NC}"
 
