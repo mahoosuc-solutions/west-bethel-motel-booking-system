@@ -1,5 +1,6 @@
 package com.westbethel.motel_booking.security.blacklist;
 
+import com.westbethel.motel_booking.common.audit.AuditEntry;
 import com.westbethel.motel_booking.common.service.AuditService;
 import com.westbethel.motel_booking.security.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,12 +63,10 @@ class TokenBlacklistServiceTest {
 
         // Assert
         verify(blacklistRepository, times(1)).save(any(BlacklistedToken.class));
-        verify(auditService, times(1)).logSecurityEvent(
-                eq("TOKEN_BLACKLISTED"),
-                eq(testUsername),
-                anyString(),
-                isNull()
-        );
+        verify(auditService, times(1)).record(argThat(entry ->
+                "TOKEN_BLACKLISTED".equals(entry.getAction()) &&
+                testUsername.equals(entry.getEntityId())
+        ));
     }
 
     @Test
@@ -83,7 +82,7 @@ class TokenBlacklistServiceTest {
 
         // Assert
         verify(blacklistRepository, never()).save(any(BlacklistedToken.class));
-        verify(auditService, never()).logSecurityEvent(anyString(), anyString(), anyString(), any());
+        verify(auditService, never()).record(any(AuditEntry.class));
     }
 
     @Test
@@ -146,11 +145,10 @@ class TokenBlacklistServiceTest {
         blacklistService.blacklistAllUserTokens(testUsername, "PASSWORD_CHANGE");
 
         // Assert
-        verify(auditService, times(1)).logSecurityEvent(
-                eq("ALL_TOKENS_BLACKLISTED"),
-                eq(testUsername),
-                contains("PASSWORD_CHANGE"),
-                isNull()
-        );
+        verify(auditService, times(1)).record(argThat(entry ->
+                "ALL_TOKENS_BLACKLISTED".equals(entry.getAction()) &&
+                testUsername.equals(entry.getEntityId()) &&
+                entry.getDetails().contains("PASSWORD_CHANGE")
+        ));
     }
 }
