@@ -49,14 +49,9 @@ for i in {1..10}; do
     sleep 1
 done
 
-# Create development database (using trust authentication - no password needed)
-echo -e "${BLUE}Creating database...${NC}"
-if sudo -u postgres createdb motel_booking_dev 2>/dev/null; then
-    echo -e "${GREEN}✓ Database created successfully${NC}"
-else
-    echo -e "${YELLOW}Note: Database may already exist (this is normal)${NC}"
-fi
-
+# Note: Database creation is skipped in post-create to avoid hanging
+# Spring Boot will create the database automatically on first startup
+echo -e "${YELLOW}Note: Database will be created automatically by Spring Boot on first startup${NC}"
 echo -e "${YELLOW}Note: Using trust authentication - no password required for local connections${NC}"
 
 echo -e "${GREEN}✓ PostgreSQL configured and running${NC}"
