@@ -26,37 +26,44 @@ echo -e "${GREEN}✓ PostgreSQL installed${NC}"
 
 # 2. Start and configure PostgreSQL
 echo -e "${BLUE}Configuring PostgreSQL...${NC}"
+
+# Configure PostgreSQL for trust authentication (Codespaces development environment)
+# This allows local connections without password for development simplicity
+echo -e "${BLUE}Setting up trust authentication for development...${NC}"
+sudo sed -i 's/local   all             postgres                                peer/local   all             postgres                                trust/' /etc/postgresql/15/main/pg_hba.conf
+sudo sed -i 's/local   all             all                                     peer/local   all             all                                     trust/' /etc/postgresql/15/main/pg_hba.conf
+sudo sed -i 's/host    all             all             127.0.0.1\/32            scram-sha-256/host    all             all             127.0.0.1\/32            trust/' /etc/postgresql/15/main/pg_hba.conf
+sudo sed -i 's/host    all             all             ::1\/128                 scram-sha-256/host    all             all             ::1\/128                 trust/' /etc/postgresql/15/main/pg_hba.conf
+
+# Start PostgreSQL with new configuration
 sudo service postgresql start
+sleep 2
 
 # Wait for PostgreSQL to be ready
-sleep 3
-pg_isready -h localhost -p 5432 || sleep 2
+echo -e "${BLUE}Waiting for PostgreSQL to be ready...${NC}"
+for i in {1..10}; do
+    if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ PostgreSQL is ready${NC}"
+        break
+    fi
+    sleep 1
+done
 
-# Configure PostgreSQL to accept password authentication
-echo -e "${BLUE}Configuring PostgreSQL authentication...${NC}"
-sudo sed -i 's/local   all             postgres                                peer/local   all             postgres                                trust/' /etc/postgresql/15/main/pg_hba.conf
-sudo sed -i 's/local   all             all                                     peer/local   all             all                                     md5/' /etc/postgresql/15/main/pg_hba.conf
-sudo sed -i 's/host    all             all             127.0.0.1\/32            scram-sha-256/host    all             all             127.0.0.1\/32            md5/' /etc/postgresql/15/main/pg_hba.conf
-
-# Reload PostgreSQL configuration
-sudo service postgresql reload
-sleep 1
-
-# Set password for postgres user (with explicit database and timeout)
-echo -e "${BLUE}Setting PostgreSQL password...${NC}"
-timeout 10 sudo -u postgres psql -d postgres -c "ALTER USER postgres WITH PASSWORD 'devpassword';" || {
-    echo -e "${YELLOW}Warning: Password setup command timed out or failed. Checking if we can connect...${NC}"
-}
+# Create postgres user password (optional, but allows external connections if needed)
+echo -e "${BLUE}Setting PostgreSQL password for remote access...${NC}"
+sudo -u postgres psql -d postgres -c "ALTER USER postgres WITH PASSWORD 'devpassword';" 2>/dev/null || echo -e "${YELLOW}Note: Password setup skipped${NC}"
 
 # Create development database
 echo -e "${BLUE}Creating database...${NC}"
-timeout 10 sudo -u postgres createdb motel_booking_dev 2>/dev/null || echo -e "${YELLOW}Database may already exist${NC}"
+sudo -u postgres createdb motel_booking_dev 2>/dev/null || echo -e "${YELLOW}Database may already exist${NC}"
 
-# Verify database connection works
+# Verify database connection
 echo -e "${BLUE}Verifying database connection...${NC}"
-PGPASSWORD=devpassword timeout 5 psql -h localhost -U postgres -d motel_booking_dev -c "SELECT version();" > /dev/null 2>&1 && \
-    echo -e "${GREEN}✓ Database connection verified${NC}" || \
+if sudo -u postgres psql -d motel_booking_dev -c "SELECT version();" > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Database connection verified${NC}"
+else
     echo -e "${YELLOW}Warning: Could not verify database connection${NC}"
+fi
 
 echo -e "${GREEN}✓ PostgreSQL configured and running${NC}"
 
