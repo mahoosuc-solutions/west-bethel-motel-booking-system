@@ -2,7 +2,7 @@
   "name": "West Bethel Motel Booking System",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspace",
+  "workspaceFolder": "/workspaces/west-bethel-motel-booking-system",
 
   "features": {
     "ghcr.io/devcontainers/features/java:1": {
@@ -65,8 +65,6 @@
     8080,
     5432,
     6379,
-    1025,
-    8025,
     9090,
     3000
   ],
@@ -83,14 +81,6 @@
     "6379": {
       "label": "Redis",
       "onAutoForward": "silent"
-    },
-    "1025": {
-      "label": "Mailhog SMTP",
-      "onAutoForward": "silent"
-    },
-    "8025": {
-      "label": "Mailhog UI",
-      "onAutoForward": "openPreview"
     },
     "9090": {
       "label": "Prometheus",

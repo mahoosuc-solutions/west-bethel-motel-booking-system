@@ -10,7 +10,7 @@ spring:
 
   # Database Configuration (PostgreSQL in Codespaces)
   datasource:
-    url: jdbc:postgresql://localhost:5432/motel_booking_dev
+    url: jdbc:postgresql://db:5432/motel_booking_dev
     username: postgres
     password: devpassword
     driver-class-name: org.postgresql.Driver
@@ -36,17 +36,17 @@ spring:
   # Redis Configuration
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
       password: devredispass
       timeout: 60000ms
 
-  # Email Configuration (Mailhog)
+  # Email Configuration (Use environment variables or defaults to localhost for testing)
   mail:
-    host: localhost
-    port: 1025
-    username: ''
-    password: ''
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:

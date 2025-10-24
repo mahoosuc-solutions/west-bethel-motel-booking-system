@@ -7,24 +7,22 @@ services:
     volumes:
       - ../..:/workspaces:cached
     command: sleep infinity
-    network_mode: service:db
     environment:
       - SPRING_PROFILES_ACTIVE=codespaces
-      - DATABASE_URL=jdbc:postgresql://localhost:5432/motel_booking_dev
+      - DATABASE_URL=jdbc:postgresql://db:5432/motel_booking_dev
       - DATABASE_USERNAME=postgres
       - DATABASE_PASSWORD=devpassword
-      - REDIS_HOST=localhost
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - SMTP_HOST=localhost
-      - SMTP_PORT=1025
       - JWT_SECRET=dev-secret-key-change-in-production-minimum-256-bits-required
       - JWT_EXPIRATION=86400000
       - CORS_ALLOWED_ORIGINS=*
       - FEATURE_FLAGS_ENABLED=true
+    networks:
+      - devnet
     depends_on:
       - db
       - redis
-      - mailhog
 
   db:
     image: postgres:15-alpine
@@ -40,6 +38,8 @@ services:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
       - "5432:5432"
+    networks:
+      - devnet
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -55,24 +55,13 @@ services:
       - redis-data:/data
     ports:
       - "6379:6379"
+    networks:
+      - devnet
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
-    network_mode: service:db
-
-  mailhog:
-    image: mailhog/mailhog:latest
-    container_name: motel-booking-mailhog
-    restart: unless-stopped
-    ports:
-      - "1025:1025"  # SMTP server
-      - "8025:8025"  # Web UI
-    network_mode: service:db
-    environment:
-      MH_STORAGE: maildir
-      MH_MAILDIR_PATH: /tmp/mailhog
 
   prometheus:
     image: prom/prometheus:latest
@@ -88,7 +77,8 @@ services:
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
-    network_mode: service:db
+    networks:
+      - devnet
     depends_on:
       - app
 
@@ -106,7 +96,8 @@ services:
       - ./grafana-dashboards:/etc/grafana/provisioning/dashboards
     ports:
       - "3000:3000"
-    network_mode: service:db
+    networks:
+      - devnet
     depends_on:
       - prometheus
 
@@ -117,5 +108,5 @@ volumes:
   grafana-data:
 
 networks:
-  default:
+  devnet:
     driver: bridge
