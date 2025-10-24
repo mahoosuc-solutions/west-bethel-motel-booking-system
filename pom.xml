@@ -114,11 +114,7 @@
             <artifactId>micrometer-core</artifactId>
         </dependency>
 
-        <!-- HTML Email Support -->
-        <dependency>
-            <groupId>org.thymeleaf.extras</groupId>
-            <artifactId>thymeleaf-extras-java8time</artifactId>
-        </dependency>
+        <!-- HTML Email Support: Java 8 time support is built-in to Thymeleaf 3.x+ -->
 
         <!-- MFA Support - Google Authenticator -->
         <dependency>
