@@ -43,12 +43,12 @@ public class ApiContractTests extends E2ETestBase {
 
         response.then()
                 .statusCode(anyOf(is(201), is(400), is(422)))
-                .body("$", anyKey("token", "message", "errors"));
+                .body("$", anyOf(hasKey("token"), hasKey("message"), hasKey("errors")));
 
         if (response.statusCode() == 201) {
             response.then()
                     .body("token", notNullValue())
-                    .body("token", is(String.class));
+                    .body("token", isA(String.class));
         }
     }
 
@@ -157,7 +157,7 @@ public class ApiContractTests extends E2ETestBase {
 
         response.then()
                 .statusCode(anyOf(is(201), is(400), is(422)))
-                .body("$", anyKey("id", "message", "errors"));
+                .body("$", anyOf(hasKey("id"), hasKey("message"), hasKey("errors")));
 
         if (response.statusCode() == 201) {
             response.then()
@@ -254,7 +254,7 @@ public class ApiContractTests extends E2ETestBase {
 
         response.then()
                 .statusCode(anyOf(is(400), is(422)))
-                .body("$", anyKey("message", "error", "errors"));
+                .body("$", anyOf(hasKey("message"), hasKey("error"), hasKey("errors")));
     }
 
     @Test
