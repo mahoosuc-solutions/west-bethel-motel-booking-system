@@ -74,6 +74,6 @@
 
   "containerEnv": {
     "SPRING_PROFILES_ACTIVE": "codespaces",
-    "JAVA_HOME": "/usr/local/sdkman/candidates/java/current"
+    "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current"
   }
 }
