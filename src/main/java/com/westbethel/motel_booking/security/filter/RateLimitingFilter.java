@@ -177,18 +177,18 @@ public class RateLimitingFilter implements Filter {
      */
     private void cleanupExpiredBuckets() {
         long now = System.currentTimeMillis();
-        int removed = 0;
+        AtomicInteger removed = new AtomicInteger(0);
 
         rateLimitMap.entrySet().removeIf(entry -> {
             if (entry.getValue().isExpired(now)) {
-                removed++;
+                removed.incrementAndGet();
                 return true;
             }
             return false;
         });
 
-        if (removed > 0) {
-            logger.debug("Cleaned up {} expired rate limit buckets", removed);
+        if (removed.get() > 0) {
+            logger.debug("Cleaned up {} expired rate limit buckets", removed.get());
         }
     }
 
