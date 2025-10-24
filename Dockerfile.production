@@ -126,7 +126,7 @@ ENTRYPOINT ["/sbin/tini", "-g", "--"]
 CMD ["java", \
      "-cp", \
      "BOOT-INF/classes:BOOT-INF/lib/*", \
-     "com.westbethel.MotelBookingApplication"]
+     "com.westbethel.motel_booking.MotelBookingApplication"]
 
 #==============================================================================
 # Security Hardening Notes:

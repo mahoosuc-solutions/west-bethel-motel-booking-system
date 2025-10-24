@@ -130,14 +130,18 @@ echo ""
 echo -e "${BLUE}7. Checking application properties...${NC}"
 if [ -f "src/main/resources/application.properties" ]; then
     print_status 0 "application.properties exists"
+elif [ -f "src/main/resources/application.yml" ]; then
+    print_status 0 "application.yml exists"
 else
-    print_warning "application.properties NOT found"
+    print_warning "application.properties or application.yml NOT found"
 fi
 
 if [ -f "src/main/resources/application-codespaces.properties" ]; then
     print_status 0 "application-codespaces.properties exists"
+elif [ -f "src/main/resources/application-codespaces.yml" ]; then
+    print_status 0 "application-codespaces.yml exists"
 else
-    print_info "application-codespaces.properties will be created by post-create.sh"
+    print_info "Codespaces-specific application config will be created by post-create.sh"
 fi
 
 # 8. Check Maven
@@ -147,11 +151,28 @@ if [ -f "pom.xml" ]; then
     print_status 0 "pom.xml exists"
 
     if command -v mvn &> /dev/null; then
-        echo "  Running Maven validation (compile only, no tests)..."
-        if mvn clean compile -DskipTests -q > /dev/null 2>&1; then
-            print_status 0 "Maven compile successful"
+        if command -v java &> /dev/null; then
+            if [ -z "${JAVA_HOME}" ]; then
+                JAVA_BIN=$(command -v java)
+                if [ -n "${JAVA_BIN}" ]; then
+                    JAVA_GUESS=$(dirname "$(dirname "${JAVA_BIN}")")
+                    export JAVA_HOME="${JAVA_GUESS}"
+                    print_info "JAVA_HOME not set; temporarily using ${JAVA_HOME}"
+                fi
+            fi
+
+            if [ -n "${JAVA_HOME}" ]; then
+                echo "  Running Maven validation (compile only, no tests)..."
+                if mvn clean compile -DskipTests -q > /dev/null 2>&1; then
+                    print_status 0 "Maven compile successful"
+                else
+                    print_status 1 "Maven compile failed"
+                fi
+            else
+                print_warning "JAVA_HOME could not be determined; skipping Maven compile check"
+            fi
         else
-            print_status 1 "Maven compile failed"
+            print_warning "Java runtime not available; skipping Maven compile check"
         fi
     else
         print_info "Maven not installed locally, will be available in Codespaces"
