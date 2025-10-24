@@ -397,13 +397,7 @@ public class TestDataBuilder {
             return RatePlan.builder()
                     .id(id)
                     .propertyId(propertyId)
-                    .roomTypeId(roomTypeId)
-                    .code(code)
                     .name(name)
-                    .description(description)
-                    .baseRate(baseRate)
-                    .effectiveFrom(effectiveFrom)
-                    .effectiveTo(effectiveTo)
                     .build();
         }
 
@@ -515,7 +509,7 @@ public class TestDataBuilder {
         private String lastName = "User";
         private boolean enabled = true;
         private boolean emailVerified = true;
-        private Set<Role> roles = Set.of(Role.CUSTOMER);
+        private Set<Role> roles = Set.of(createCustomerRole());
 
         public UserBuilder username(String username) {
             this.username = username;
@@ -558,16 +552,14 @@ public class TestDataBuilder {
         }
 
         public User build() {
-            User user = new User();
-            user.setUsername(username);
-            user.setEmail(email);
-            user.setPassword(password);
-            user.setFirstName(firstName);
-            user.setLastName(lastName);
-            user.setEnabled(enabled);
-            user.setEmailVerified(emailVerified);
-            user.setRoles(roles);
-            return user;
+            return User.builder()
+                    .username(username)
+                    .email(email)
+                    .passwordHash(password)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .enabled(enabled)
+                    .build();
         }
 
         public static UserBuilder defaultUser() {
@@ -580,12 +572,26 @@ public class TestDataBuilder {
                     .email("admin@westbethelmotel.com")
                     .firstName("Admin")
                     .lastName("User")
-                    .roles(Set.of(Role.ADMIN));
+                    .roles(Set.of(createAdminRole()));
         }
 
         public static UserBuilder customerUser() {
             return new UserBuilder()
-                    .roles(Set.of(Role.CUSTOMER));
+                    .roles(Set.of(createCustomerRole()));
+        }
+
+        private static Role createCustomerRole() {
+            return Role.builder()
+                    .name("ROLE_CUSTOMER")
+                    .description("Customer role")
+                    .build();
+        }
+
+        private static Role createAdminRole() {
+            return Role.builder()
+                    .name("ROLE_ADMIN")
+                    .description("Admin role")
+                    .build();
         }
     }
 
@@ -598,7 +604,7 @@ public class TestDataBuilder {
         private String reference = "BK" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         private UUID guestId = UUID.randomUUID();
         private BookingStatus status = BookingStatus.CONFIRMED;
-        private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+        private PaymentStatus paymentStatus = PaymentStatus.INITIATED;
         private BookingChannel channel = BookingChannel.DIRECT;
         private String source = "web";
         private String createdBy = "system";

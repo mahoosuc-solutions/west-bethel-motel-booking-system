@@ -397,7 +397,7 @@ public class ApiContractTests extends E2ETestBase {
                 .get("/api/admin/stats");
 
         // Stats endpoint may or may not exist
-        assertThat(response.statusCode()).isIn(200, 404, 405);
+        org.assertj.core.api.Assertions.assertThat(response.statusCode()).isIn(200, 404, 405);
     }
 
     @Test
