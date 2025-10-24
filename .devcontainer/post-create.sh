@@ -27,8 +27,25 @@ echo -e "${GREEN}✓ PostgreSQL installed${NC}"
 # 2. Start and configure PostgreSQL
 echo -e "${BLUE}Configuring PostgreSQL...${NC}"
 sudo service postgresql start
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'devpassword';" > /dev/null 2>&1
-sudo -u postgres createdb motel_booking_dev > /dev/null 2>&1 || true
+
+# Wait for PostgreSQL to be ready
+sleep 2
+
+# Configure PostgreSQL to accept password authentication
+echo -e "${BLUE}Configuring PostgreSQL authentication...${NC}"
+sudo sed -i 's/local   all             postgres                                peer/local   all             postgres                                trust/' /etc/postgresql/15/main/pg_hba.conf
+sudo sed -i 's/local   all             all                                     peer/local   all             all                                     md5/' /etc/postgresql/15/main/pg_hba.conf
+sudo sed -i 's/host    all             all             127.0.0.1\/32            scram-sha-256/host    all             all             127.0.0.1\/32            md5/' /etc/postgresql/15/main/pg_hba.conf
+
+# Reload PostgreSQL configuration
+sudo service postgresql reload
+
+# Set password for postgres user
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'devpassword';"
+
+# Create development database
+sudo -u postgres createdb motel_booking_dev || true
+
 echo -e "${GREEN}✓ PostgreSQL configured and running${NC}"
 
 # 3. Install Redis
