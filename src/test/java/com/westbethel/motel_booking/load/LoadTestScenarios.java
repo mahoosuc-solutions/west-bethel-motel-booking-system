@@ -705,10 +705,13 @@ public class LoadTestScenarios extends E2ETestBase {
     @DisplayName("Endurance Test: Long-running stability")
     void testLongRunningStability() throws InterruptedException {
         Callable<Response> request = () ->
-                given().spec(authenticatedRequest()).when().get("/api/rooms/availability")
+                given()
+                        .spec(authenticatedRequest())
                         .queryParam("checkIn", "2025-12-01")
                         .queryParam("checkOut", "2025-12-05")
-                        .queryParam("guests", 2);
+                        .queryParam("guests", 2)
+                        .when()
+                        .get("/api/rooms/availability");
 
         LoadTestHelper.LoadTestResult result = loadTestHelper.executeSustainedLoad(request, 10, 30);
 

@@ -3,7 +3,9 @@ package com.westbethel.motel_booking.database;
 import com.westbethel.motel_booking.testutil.BaseIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @DisplayName("Database Integration Tests")
 public class DatabaseIntegrationTest extends BaseIntegrationTest {
+
+    @Autowired
+    protected JdbcTemplate jdbcTemplate;
 
     // ===== Transaction Isolation Tests (5 tests) =====
 
