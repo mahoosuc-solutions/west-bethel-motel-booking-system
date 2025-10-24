@@ -49,21 +49,15 @@ for i in {1..10}; do
     sleep 1
 done
 
-# Create postgres user password (optional, but allows external connections if needed)
-echo -e "${BLUE}Setting PostgreSQL password for remote access...${NC}"
-sudo -u postgres psql -d postgres -c "ALTER USER postgres WITH PASSWORD 'devpassword';" 2>/dev/null || echo -e "${YELLOW}Note: Password setup skipped${NC}"
-
-# Create development database
+# Create development database (using trust authentication - no password needed)
 echo -e "${BLUE}Creating database...${NC}"
-sudo -u postgres createdb motel_booking_dev 2>/dev/null || echo -e "${YELLOW}Database may already exist${NC}"
-
-# Verify database connection
-echo -e "${BLUE}Verifying database connection...${NC}"
-if sudo -u postgres psql -d motel_booking_dev -c "SELECT version();" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Database connection verified${NC}"
+if sudo -u postgres createdb motel_booking_dev 2>/dev/null; then
+    echo -e "${GREEN}✓ Database created successfully${NC}"
 else
-    echo -e "${YELLOW}Warning: Could not verify database connection${NC}"
+    echo -e "${YELLOW}Note: Database may already exist (this is normal)${NC}"
 fi
+
+echo -e "${YELLOW}Note: Using trust authentication - no password required for local connections${NC}"
 
 echo -e "${GREEN}✓ PostgreSQL configured and running${NC}"
 
