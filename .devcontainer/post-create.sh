@@ -72,22 +72,27 @@ echo -e "${BLUE}Verifying services...${NC}"
 pg_isready -h localhost -p 5432 > /dev/null 2>&1 && echo -e "${GREEN}✓ PostgreSQL is ready${NC}"
 redis-cli -a devredispass ping > /dev/null 2>&1 && echo -e "${GREEN}✓ Redis is ready${NC}"
 
-# 6. Install Maven dependencies
+# 6. Install Maven
+echo -e "${BLUE}Installing Maven...${NC}"
+sudo apt-get install -y maven > /dev/null 2>&1
+mvn --version > /dev/null 2>&1 && echo -e "${GREEN}✓ Maven installed${NC}" || echo -e "${YELLOW}⚠ Maven installation may have issues${NC}"
+
+# 7. Install Maven dependencies
 echo -e "${BLUE}Installing Maven dependencies...${NC}"
 mvn clean install -DskipTests -q
 echo -e "${GREEN}✓ Maven dependencies installed${NC}"
 
-# 7. Run database initialization
+# 8. Run database initialization
 echo -e "${BLUE}Initializing database schema...${NC}"
 PGPASSWORD=devpassword psql -h localhost -U postgres -d motel_booking_dev -f .devcontainer/init-db.sql > /dev/null 2>&1 || true
 echo -e "${GREEN}✓ Database initialized${NC}"
 
-# 8. Set up Git configuration
+# 9. Set up Git configuration
 echo -e "${BLUE}Configuring Git...${NC}"
 git config --global --add safe.directory /workspaces/west-bethel-motel-booking-system
 echo -e "${GREEN}✓ Git configured${NC}"
 
-# 9. Create quick reference scripts
+# 10. Create quick reference scripts
 echo -e "${BLUE}Creating quick reference scripts...${NC}"
 cat > run-app.sh << 'EOF'
 #!/bin/bash
@@ -124,7 +129,7 @@ chmod +x check-services.sh
 
 echo -e "${GREEN}✓ Quick reference scripts created${NC}"
 
-# 10. Display helpful information
+# 11. Display helpful information
 echo ""
 echo "========================================="
 echo -e "${GREEN}Codespaces Setup Complete!${NC}"
